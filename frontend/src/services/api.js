@@ -82,21 +82,32 @@ export function toggleAPI(which_server) {
 
 // Parse all queries from react to send to server
 // We can build cqp here if we want or in the React component
-export async function getCorpusQuery(inQuery, start, end, in_order = true, default_within = String()) {
 
+export async function setHistoryAPI(inQuery) {
+
+    const inputWords = inQuery.match(/"(.*?)"/g)
+    const currentUrl = window.location.search; 
+    setHistory(inputWords, currentUrl);
+    
+  } 
+
+
+export async function getCorpusQuery(inQuery, start, end, corpusName) {
+
+  queryParams.corpus = corpusName;
   console.log("inQuery", inQuery)
   queryParams.cqp = inQuery;
   queryParams.start = start;
   queryParams.end = end;
-  queryParams.in_order = in_order;
-  queryParams.default_within = "sentence";
+
+
 
   const inputWords = inQuery.match(/"(.*?)"/g)
   try {
     const response = await axios_instance('/query', {params: queryParams});
     const currentUrl = window.location.search; 
     
-    setHistory(inputWords, currentUrl);
+
     return response.data;
   } catch (error) {
     console.log("getCorpusQuery ERROR: ", error);
@@ -146,13 +157,16 @@ export function buildQuery(params) {
   return finalQuery;
 }
 
-export async function getStatisticsOverTime(word, wordClass) {
-    console.log('Getting statistics for ', word, wordClass);
+export async function getStatisticsOverTime(word, corporasStats, wordClass) {
+    console.log('Getting statistics for ', word, wordClass, corporasStats);
     
-    queryParams.cqp = `[lex contains "${word}\\.\\.${wordClass}\\.1"]`
+    let tempParams = {};
+    tempParams.cqp = `[lex contains "${word}\\.\\.${wordClass}\\.1"]`
+    tempParams.corpus = String(Object.keys(corporasStats));
+    tempParams.default_within='sentence'
     
     try {
-        const response = await axios_instance('/count_time', {params: queryParams});
+        const response = await axios_instance('/count_time', {params: tempParams});
         console.log('statistics response', response.data);
         return response.data;
     } catch(error) {

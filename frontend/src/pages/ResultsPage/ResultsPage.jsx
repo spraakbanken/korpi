@@ -21,13 +21,10 @@ import CorpusButton from "../../components/CorpusButton/CorpusButton.jsx";
 import AdvancedSearch from "../../components/AdvancedSearch/AdvancedSearch.jsx";
 import FilterCard from "../../components/FilterCard/FilterCard.jsx";
 //Services
-import { getCorpusInfo, getCorpusQuery } from "../../services/api.js";
+import { getCorpusInfo, getCorpusQuery, setHistoryAPI } from "../../services/api.js";
 
 //Assets
 import advanced from '../../assets/advanced.svg';
-import homeIconLight from '../../assets/homeIconLight.svg';
-import homeIconDark from '../../assets/homeIconDark.svg';
-
 
 //Corpus, history, advanced search
 import CorpusDropDown from "../../components/CorpusDropdown/CorpusDropdown.jsx";
@@ -36,11 +33,15 @@ import history_logo from '../../assets/rotate-ccw.svg';
 import sliders_logo from '../../assets/sliders.svg';
 import CorporaContext from "../../services/CorporaContext.jsx";
 import { buildQuery } from "../../services/api.js";
-import HomeButton from "../../components/HomeButton/HomeButton.jsx";
 import { getLastSearched } from "../../services/history.js";
 //import CalenderButton from "../../components/CalenderButton/CalenderButton.jsx";
 
 export default function ResultsPage() {
+
+    const [pendingRequests, setPendingRequests] = useState(0);
+    const [percentLoaded, setPercentLoaded] = useState(0);
+    const [isFetching, setIsFetching] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [hits, setHits] = useState();
     const location = useLocation(); //All this is first draft for routing.
@@ -51,6 +52,7 @@ export default function ResultsPage() {
     const [showHistory, setShowHistory] = useState(false);
     const { corporas } = useContext(CorporaContext);
     const isInitialMount = useRef(true);
+    const resultsHeaderRef = useRef(null);
 
     const [perCorpusResults, setPerCorpusResults] = useState({});
     const [corpusHits, setCorpusHits] = useState({});
@@ -108,27 +110,27 @@ export default function ResultsPage() {
         setShowFilterModal((prev) => !prev);
     };
 
-    const
-        { data: searchCorpusData = [],
-            isLoading: searchCorpusIsLoading,
-            refetch: searchCorpusRefetch,
-        } = useQuery({
-            queryKey: [corpusInput], // Defaults to ROMI, we have to include corpus in routing.
-            queryFn: () => getCorpusInfo(corpusInput),
-            enabled: corpusInput !== "",
+    // const
+    //     { data: searchCorpusData = [],
+    //         isLoading: searchCorpusIsLoading,
+    //         refetch: searchCorpusRefetch,
+    //     } = useQuery({
+    //         queryKey: [corpusInput], // Defaults to ROMI, we have to include corpus in routing.
+    //         queryFn: () => getCorpusInfo(corpusInput),
+    //         enabled: corpusInput !== "",
 
-        });
+    //     });
 
-    const
-        { data: searchQueryData = [],
-            isLoading: searchQueryIsLoading,
-            refetch: searchQueryRefetch,
-            isRefetching: isSearchQueryRefetching
-        } = useQuery({
-            queryKey: [searchWordInput, corpusInput],
-            queryFn: () => getCorpusQuery(searchWordInput, 0, 0, true, "sentence"),
-            enabled: false,
-        });
+    // const
+    //     { data: searchQueryData = [],
+    //         isLoading: searchQueryIsLoading,
+    //         refetch: searchQueryRefetch,
+    //         isRefetching: isSearchQueryRefetching
+    //     } = useQuery({
+    //         queryKey: [searchWordInput, corpusInput],
+    //         queryFn: () => getCorpusQuery(searchWordInput, 0, 0, true, "sentence"),
+    //         enabled: false,
+    //     });
 
         const handleSubmit = (event) => {
             if (!corporas.corporas) {
@@ -159,8 +161,10 @@ export default function ResultsPage() {
             const selectedCorpora = Object.keys(corporas.corporas);
             const corpusInputStr = selectedCorpora.join(",");
             setCorpusInput(corpusInputStr);
+            
         
             // Navigate URL (for reload/bookmark)
+
             navigate(`/results?corpus=${encodeURIComponent(corpusInputStr)}&cqp=${encodeURIComponent(query)}`
                 , {state: {wordFromLP : event}});
         };
@@ -197,16 +201,9 @@ const history_tip = (
     
 );
 
-
-
     const toggleHistory = () => {
         setShowHistory((prev) => !prev);
     };
-
-    const homeIcon = settings.theme === "light" ? homeIconLight : homeIconDark;
-
-
-
 
     function getCorpusData(data) {
         const langs = data.corpora
@@ -240,24 +237,24 @@ const history_tip = (
 
     useEffect(() => {
         if (searchWordInput && corpusInput) {
-            searchQueryRefetch().then((res) => {
-                const data = res.data;
-                
-                if (data?.corpus_hits && data?.corpus_order) {
-                    setCorpusHits(data.corpus_hits);
-                    setHits(data.hits);
-                    const startEndMap = buildStartEndMap(data.corpus_order, data.corpus_hits, settings.sampleSize);
-                   
-                    Object.entries(startEndMap).forEach(([corpusName, { start, end }]) => {
-                        console.log('fetching for', corpusName, start, end);
-                        setQueryCounter(queryCounter+1);
+                setHits(0);
+                setIsFetching(true);
+                setQueryData({});
+                setPerCorpusResults({});
+                setPendingRequests(Object.keys(corporas.corporas).length);
+                setIsLoading(true);
+                setHistoryAPI(searchWordInput);
+                console.log("corporas", corporas.corporas);
+                Object.entries(corporas.corporas).forEach(([corpusName, val]) => {
+                    console.log('fetching for', corpusName);
+                    setQueryCounter(queryCounter+1);
 
-                       fetchCorpusResults(corpusName, start, end, searchWordInput);
-                    });
-                    
-                }
-            }).then(console.log('fetching done'));            
-            
+                    fetchCorpusResults(corpusName, 0, 10, searchWordInput);
+                });
+                
+                setIsFetching(false);
+                            
+        
         }
     }, [searchWordInput, corpusInput, settings.sampleSize]);
 
@@ -268,14 +265,23 @@ const history_tip = (
 
     const fetchCorpusResults = async (corpusName, start, end, query) => {
         try {
-            const responseFromQuery = await getCorpusQuery(query, start, end);
+
+            
+            const responseFromQuery = await getCorpusQuery(query, start, end, corpusName);
             let corpLower = corpusName.toLowerCase();
+
+
             setPerCorpusResults(prev => {
                 const updatedResults = {
                     ...prev,
                     [corpLower]: responseFromQuery
                 };
+
+                const totalHits = Object.values(updatedResults).reduce((sum, corpusData) => {
+                    return sum + (corpusData?.hits || 0);
+                }, 0);
                 
+                setHits(totalHits); // Update total hits
                 // Use the updated value immediately
                 setQueryData(updatedResults);
                 console.log('updatedResults', updatedResults);
@@ -283,10 +289,28 @@ const history_tip = (
             });
         } catch (error) {
             console.error(`Failed to fetch results for ${corpusName}:`, error);
+        } finally {
+            // Decrement pending requests counter when done (success or error)
+            setPendingRequests(prev => prev - 1);
         }
     };
     
-    
+    useEffect(() => {
+        const totalCorporas = Object.keys(corporas.corporas).length;
+        console.log("total corporas", totalCorporas);
+        console.log("pending", pendingRequests);
+
+        let _percentLoaded = Math.round(((pendingRequests-1) / totalCorporas) * 100);
+        setPercentLoaded(_percentLoaded);
+
+        if (pendingRequests === 0) {
+            setIsLoading(false); // All requests completed
+            const header = document.getElementById('collapse-button-id');
+            header?.scrollIntoView({
+                behavior: 'smooth'
+            }); 
+        }
+    }, [pendingRequests]);
 
     useEffect(() => {
         setSearchWordInput(searchQueryTest || '');
@@ -298,11 +322,6 @@ const history_tip = (
         console.log("Settings in Results: ", settings);
     }, [settings])
 
-    useEffect(() => {
-        if (searchCorpusData && corpusInput) {
-            getCorpusData(searchCorpusData);
-        }
-    }, [searchCorpusData]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -347,8 +366,6 @@ const history_tip = (
             <NavigationBar />
             <div className="results-content">
                 <div className="resultpage__search_container">
-                    <HomeButton/>
-
                     <div className="resultpage__search_content">
                         <div className="resultpage__corpus_button">
                             <CorpusButton
@@ -419,14 +436,14 @@ const history_tip = (
                 </div>
                 {showHistory && <HistoryPanel />}
                 
-                <ProgressBar isLoading={searchQueryIsLoading} />
+                <ProgressBar isLoading={isLoading} percentLoaded={100 - percentLoaded}/>
 
                 <div className="mt-2">
                     {/*queryData.kwic == undefined ? <p>Loading...</p> : JSON.stringify(queryData) */}
                     {queryData === undefined ? <p>Laddar...</p> :
                         <ResultsPanel response={queryData} 
                             wordToDef={state?.wordFromLP} 
-                            isFetching={searchQueryIsLoading}
+                            isFetching={null}
                             corpusHits={corpusHits}
                             hits={hits}/>}
                 </div>
