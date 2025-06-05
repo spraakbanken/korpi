@@ -13,7 +13,7 @@ import SettingsContext from '../../services/SettingsContext';
 import { BorderBottom } from 'react-bootstrap-icons';
 
 
-export default function BarChart({word}) {
+export default function BarChart({word, corporasForStats}) {
 
     const [expandStat, setExpandStat] = useState(true);
     const [statDataCombined, setStatDataCombined] = useState({});
@@ -42,7 +42,7 @@ export default function BarChart({word}) {
         refetch: statisticsDataRefetch,
     } = useQuery({
         queryKey: [word],
-        queryFn: () => getStatisticsOverTime(word, wordClass || 'nn'),
+        queryFn: () => getStatisticsOverTime(word, corporasForStats, wordClass || 'nn'),
         enabled: false,
     });
 
@@ -117,7 +117,7 @@ export default function BarChart({word}) {
         plugins: {
             title: {
                 display: true,
-                text: `Användning av ${word.toUpperCase()} i valda korpusar över tid`,
+                text: `Användning av ordet i valda korpusar över tid`, //Detta var ${word.toUpperCase()} istället för ordet.
                 font: {
                     size: 18,
                 }
