@@ -5,16 +5,18 @@ import calenderIconLight from '../../assets/calenderIconLight.svg';
 import calenderIconDark from '../../assets/calenderIconDark.svg';
 import SettingsContext from "../../services/SettingsContext.jsx";
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react-dom';
-import "./CalenderButton.css"
 
-export default function CalenderButton() {
+export default function HomeButton() {
     const [showTooltip, setShowTooltip] = useState(false);
     const { settings, updateSettings } = useContext(SettingsContext);
 
     const calenderIcon = settings.theme === "light" ? calenderIconLight : calenderIconDark;
 
     const layout_tip = (
-      <strong>Byt layout</strong>
+        
+            <strong>Byt layout</strong>
+        
+
     )
 
     const { x, y, refs, strategy } = useFloating({
@@ -25,13 +27,18 @@ export default function CalenderButton() {
 <img className="calenderIconSVG" src={calenderIcon} alt="Calender icon" />
 
   return (
-        <div className='calender-button'>
-        <img src={calenderIcon}
+        <div className='calender-button-'>
+      <Link className="calenderIconA" to="/">
+        <img
         ref={refs.setReference}
+        src={calenderIcon}
         alt="Calender icon"
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
         />
+      </Link>
+
+     
 
     {showTooltip && (
         <div

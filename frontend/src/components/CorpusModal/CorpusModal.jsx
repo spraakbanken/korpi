@@ -1,14 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
-import { CircleArrowRight, CircleArrowDown, X, Check } from "lucide-react";
+import { CircleArrowRight, CircleArrowDown, X } from "lucide-react";
 import "./CorpusModal.css";
 import peterCorpra from '../../services/peterCorpora.json';
 import sbCorpra from '../../services/testdata.json';
 import CorporaContext from "../../services/CorporaContext.jsx";
 import { Search } from 'lucide-react';
 import SettingsContext from "../../services/SettingsContext.jsx";
-import Form from 'react-bootstrap/Form';
 
 
 export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
@@ -22,22 +21,18 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
     const testdata = settings.api === 1 ? sbCorpra : peterCorpra;
 
     // Generate random UUIDs for all subcorpora on first render
-    //!IMPORTANT: Probably need to overlook these keys, they could break, if 2 subcorporas has the same name (I think).
     useEffect(() => {
         const ids = {};
         Object.values(testdata).forEach(category => {
             if (category[3]?.subcorpora) {
                 Object.values(category[3].subcorpora).forEach(subcategory => {
                     const subTitle = subcategory[0];
-                    ids[subTitle] = crypto.randomUUID();
+                    ids[subTitle] = crypto.randomUUID(); // Using crypto.randomUUID() like in CorpusSelector
                 });
             }
         });
         setSubcorporaIds(ids);
-        setSelectedCorpora(corporas.corporas || {});
-        setSearchQuery('');
-    }, [settings.api]);
-    
+    }, []);
 
     //Trying to expand categories when searching, kinda hard
     useEffect(() => {
@@ -168,7 +163,7 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
             }
         }
         
-    }, [show]);
+    }, [show, corporas.corporas]);
 
     const matchesSearch = (text) => {
         if (!searchQuery) return true;
@@ -201,61 +196,6 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
 
     };
 
-    const handleSelectAllCorpora = (e, sectionTitle) => {
-        e.stopPropagation(); // Prevent toggle on header click
-    
-        const category = Object.values(testdata).find(cat => cat[0] === sectionTitle);
-        if (!category) return;
-    
-        const sectionCorpora = {};
-    
-    //Here we retrieve all main corporas    
-        if (category[2]) {
-            Object.entries(category[2]).forEach(([id, value]) => {
-                const label = Array.isArray(value) ? value[0] : value;
-                sectionCorpora[id] = label;
-            });
-        }
-        
-
-        // This is for subcorporas, we currently dont have this in the structure but it should (hopefully) work if we add it.
-        if (category[3]?.subcorpora) {
-            Object.values(category[3].subcorpora).forEach(sub => {
-                if (sub[2]) {
-                    Object.entries(sub[2]).forEach(([id, value]) => {
-                        const label = Array.isArray(value) ? value[0] : value;
-                        sectionCorpora[id] = label;
-                    });
-                }
-            });
-        }
-
-        // We check if all are selected within the category/title, so it works like a toggle button.
-        const allSelected = Object.keys(sectionCorpora).every(id => id in selectedCorpora);
-    
-        let newSelection;
-        //This is the "toggle statement" so you can also unselect all within a category/title.
-        if (allSelected) {
-            newSelection = { ...selectedCorpora };
-            Object.keys(sectionCorpora).forEach(id => {
-                delete newSelection[id];
-            });
-        } else {
-            newSelection = {
-                ...selectedCorpora,
-                ...sectionCorpora
-            };
-        }
-    
-        setSelectedCorpora(newSelection);
-        updateCorporas({
-            ...corporas,
-            corporas: newSelection
-        });
-    };
-    
-    
-
     const renderCorpusSection = (e) => {
         const title = e[0];
         const desc = e[1]?.swe || e[1] || ''; //In some corporas there swedish text with .swe
@@ -281,47 +221,11 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
         // Force expand if searching and has visible content
         const shouldForceExpand = searchQuery && hasVisibleContent;
         const isExpanded = shouldForceExpand || expanded[title];
-
-
-        //All below is so the toggle button(Form.check) relies on state rather than clicking.
-        const allCorporaIdsInSection = [];
-
-        //All main corpora ids
-        if (e[2]) {
-            for (const id in e[2]) {
-                allCorporaIdsInSection.push(id);
-            }
-        }
-
-        // All subcorpora ids, if there is any
-        if (e[3] && e[3].subcorpora) {
-            const subcorpora = Object.values(e[3].subcorpora); // array of subcorpora (this is the subcategory, a collection of corporas if u will)
-
-            for (const sub of subcorpora) {
-                if (sub[2]) { // sub[2] is the list of corporas in the subcorpora.
-                    for (const id in sub[2]) {
-                        allCorporaIdsInSection.push(id); // push each subcorpora in to the list.
-                    }
-                }
-            }
-        }
-
-        // Check if all are selected
-        const allSelected = allCorporaIdsInSection.length > 0 &&
-            allCorporaIdsInSection.every(id => id in selectedCorpora);
-
     
         {/*Each main corpora*/}
         return (
             <div key={title} className="corpus-section">
                 <div className="section-header" onClick={() => toggleExpanded(title)}>
-                    <Form.Check 
-                    className="section-checkbox"
-                    checked={allSelected}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => handleSelectAllCorpora(e, title)}
-                    />
-
                     {isExpanded ? <CircleArrowDown size={16} /> : <CircleArrowRight size={16} />}
                     <h5>{highlightSearchMatch(title)}</h5>
                 </div>
@@ -453,7 +357,13 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
             <Modal.Header>
                 <Modal.Title>Välj korpus</Modal.Title>
                 <div className="ms-auto">
-                    <Button onClick={onHide} className="corpusCloseButton">Spara och stäng</Button>
+                    <Button 
+                    variant="danger" 
+                    onClick={onHide}
+                    className="p-0"
+                    >
+                    <X size={24} />
+                    </Button>
                 </div>
                 </Modal.Header>
 
@@ -464,7 +374,7 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
                         <Search size={18} className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Filtrera Korpusar..."
+                            placeholder="Sök korpus..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="search-input"
@@ -480,29 +390,31 @@ export default function CorpusModal({ colour, buttonLogo, show, onHide }) {
                     </div>
                 </div>
 
-                {selectedCorpora ? (Object.keys(selectedCorpora).length > 0 ? (
-                    <div>
-                        <span className="selected-count">
-                        {Object.keys(selectedCorpora).length} {Object.keys(selectedCorpora).length === 1 ? "vald" : "valda"}
-                        </span>
-                        <div className="selected-values-container">
-                            {Object.values(selectedCorpora).map(corpus => <p className="selected-values">{corpus} |</p>)}
+                <div className="selected-corpora-bar">
+                    {selectedCorpora ? (Object.keys(selectedCorpora).length > 0 ? (
+                        <div>
+                            <span className="selected-count">
+                            {Object.keys(selectedCorpora).length} {Object.keys(selectedCorpora).length === 1 ? "Vald" : "Valda"}
+                            </span>
+                            <div className="selected-values-container">
+                                {Object.values(selectedCorpora).map(corpus => <p className="selected-values">{corpus},</p>)}
+                            </div>
+                            <Button 
+                                variant="link" 
+                                onClick={() => {
+                                    setSelectedCorpora([]);
+                                    setExpanded({});
+                                    updateCorporas({ ...corporas, corporas: null });
+                                }}
+                                size="sm"
+                            >
+                                Avmarkera alla
+                            </Button>
                         </div>
-                        <Button 
-                            variant="link" 
-                            onClick={() => {
-                                setSelectedCorpora([]);
-                                setExpanded({});
-                                updateCorporas({ ...corporas, corporas: null });
-                            }}
-                            size="sm"
-                        >
-                            Avmarkera alla
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="empty-selection">Ingen vald korpus</div>
-                )): (<div className="empty-selection">Ingen vald korpus</div>)}
+                    ) : (
+                        <div className="empty-selection">Ingen vald korpus</div>
+                    )): (<div className="empty-selection">Ingen vald korpus</div>)}
+                </div>
                 
                 <div className="corpus-container">
                     {Object.values(testdata).map(renderCorpusSection)}

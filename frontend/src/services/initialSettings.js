@@ -1,8 +1,8 @@
 // Default context values
 let _settings = {   
     "resultsPerPage": 20,
-    "sampleSize": 20,
-    "contextSize": 35,
+    "sampleSize": 1,
+    "contextSize": 10,
     "theme": "light",
     "selectedView": "wide",
     "api": 0,

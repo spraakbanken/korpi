@@ -1,24 +1,14 @@
 import axios from 'axios';
 //import qs from 'qs';
 
-import { getHistory, setHistory } from './history.js';
+import { setHistory } from './history.js';
 import queryParams from './queryParams.js';
 import server_config from './server_config.js';
-import pos_list from './part-of-speech-list.js';
-import { useContext } from 'react';
-import SettingsContext from './SettingsContext.jsx';
-import { getLocalSettings } from './initialSettings.js';
 
 // Sample Axios Code
 // Using Promises, Write a function for each endpoint
-/* let {settings} = useContext(SettingsContext);
-let currApi = settings.api ? server_config.sb_korp_api : server_config.pl_korp_api;  */
-
-let _settings = getLocalSettings();
-let currApi = _settings.api ? server_config.sb_korp_api : server_config.pl_korp_api; 
-
 const axios_instance = axios.create({
-  baseURL: currApi,
+  baseURL: server_config.pl_korp_api,
 });
 
 
@@ -82,21 +72,16 @@ export function toggleAPI(which_server) {
 
 // Parse all queries from react to send to server
 // We can build cqp here if we want or in the React component
-export async function getCorpusQuery(inQuery, start, end, in_order = true, default_within = String()) {
+export async function getCorpusQuery(inQuery) {
 
-  console.log("inQuery", inQuery)
+  // console.log("inQuery", inQuery)
   queryParams.cqp = inQuery;
-  queryParams.start = start;
-  queryParams.end = end;
-  queryParams.in_order = in_order;
-  queryParams.default_within = "sentence";
-
-  const inputWords = inQuery.match(/"(.*?)"/g)
+   
   try {
     const response = await axios_instance('/query', {params: queryParams});
     const currentUrl = window.location.search; 
     
-    setHistory(inputWords, currentUrl);
+    setHistory(inQuery, currentUrl);
     return response.data;
   } catch (error) {
     console.log("getCorpusQuery ERROR: ", error);
@@ -108,58 +93,25 @@ export function buildQuery(params) {
   //Build the query here, assign it in the getCorpusQuery function.
 
   let buildAdvancedQuery = '';
-  queryParams.default_within='sentence';
-  console.log("params to buildQuery", params);
-  
-  // does there need to be a space between these?
-  params.forEach((w) => {
-    if (w.tag === "Grundform") {
-      buildAdvancedQuery = buildAdvancedQuery + `[lemma contains "${w.wordEntry}"]`
-      
-    } else if (w.tag === "Ordform") {
-          buildAdvancedQuery = buildAdvancedQuery + `[word = "${w.wordEntry}"]`
-    } else if (w.pos) {
-        buildAdvancedQuery = buildAdvancedQuery + `[pos = "${pos_list[w.wordEntry][0]}"]`
-    }
-  })
-  
-
-
-  /* if (params !== null && typeof params === 'object'){
+  console.log("parm", params);
+  if (params !== null && typeof params === 'object'){
+    console.log("object type")
     if (Object.keys(params).length > 0){
-      params.map((w) => {
-          if (w.tag === "Grundform") {
-          buildAdvancedQuery = buildAdvancedQuery + `[lemma contains "${w.wordEntry}"] `
+      Object.entries(params).map(([word, tag]) => {
+      
+          if (tag === "Grundform") {
+          buildAdvancedQuery = buildAdvancedQuery + `[lemma contains "${word}"] `
           
-      } else if (w.tag === "Ord") {
-              buildAdvancedQuery = buildAdvancedQuery + `[word = "${w.wordEntry}"] `
+      } else if (tag === "Ord") {
+              buildAdvancedQuery = buildAdvancedQuery + `[word = "${word}"] `
           }
       })
       }
   }else{
     buildAdvancedQuery = `[word = "${params}"]`
-  } */
+  }
   const finalQuery = buildAdvancedQuery.trim(); // trims trailing space
-
-  
-  console.log('finalQuery from buildQuery', finalQuery);
   return finalQuery;
-}
-
-export async function getStatisticsOverTime(word, wordClass) {
-    console.log('Getting statistics for ', word, wordClass);
-    
-    queryParams.cqp = `[lex contains "${word}\\.\\.${wordClass}\\.1"]`
-    
-    try {
-        const response = await axios_instance('/count_time', {params: queryParams});
-        console.log('statistics response', response.data);
-        return response.data;
-    } catch(error) {
-        console.log("getStatisticsOverTime ERROR: ", error);
-        return `ERROR: statistics: ${word} not found!`;
-    }
-
 }
 
 // See korp web-api for complete api calls to implement and parse
