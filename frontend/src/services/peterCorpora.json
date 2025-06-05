@@ -1,7 +1,7 @@
 {
     "nyheter": [
         "Nyheter",
-        "Nyheter beskrivning",
+        "Description for news",
         {
             "attasidor": "8 Sidor",
             "svt-2005": "SVT 2005",
@@ -26,8 +26,8 @@
         }
     ],
     "sociala-medier": [
-        "Sociala medier",
-        "Sociala medier beskrivning",
+        "Sociala Medier",
+        "Sociala medier Description",
         {
             "familjeliv-allmanna-ekonomi": "Ekonomi",
             "familjeliv-allmanna-familjeliv": "Allmänn",
@@ -40,7 +40,7 @@
     ],
     "romaner": [
         "Romaner",
-        "Romaner beskrivning",
+        "Romaner Description",
         {
             "romi": "Romaner I",
             "romii": "Romaner II",
@@ -49,8 +49,8 @@
         }
     ],
     "faktatext": [
-        "Faktatext",
-        "Faktatext beskrivning",
+        "Fakta Text",
+        "Fakta Text Description",
         {
             "wikipedia-sv": "Svenska Wikipedia"
         }

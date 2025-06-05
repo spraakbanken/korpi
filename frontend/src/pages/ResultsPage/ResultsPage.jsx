@@ -19,7 +19,6 @@ import HistoryPanel from "../../components/HistoryPanel/HistoryPanel.jsx";
 import CorpusModal from "../../components/CorpusModal/CorpusModal.jsx";
 import CorpusButton from "../../components/CorpusButton/CorpusButton.jsx";
 import AdvancedSearch from "../../components/AdvancedSearch/AdvancedSearch.jsx";
-import FilterCard from "../../components/FilterCard/FilterCard.jsx";
 //Services
 import { getCorpusInfo, getCorpusQuery } from "../../services/api.js";
 
@@ -37,12 +36,10 @@ import sliders_logo from '../../assets/sliders.svg';
 import CorporaContext from "../../services/CorporaContext.jsx";
 import { buildQuery } from "../../services/api.js";
 import HomeButton from "../../components/HomeButton/HomeButton.jsx";
-import { getLastSearched } from "../../services/history.js";
-//import CalenderButton from "../../components/CalenderButton/CalenderButton.jsx";
+import CalenderButton from "../../components/CalenderButton/CalenderButton.jsx";
 
 export default function ResultsPage() {
 
-    const [hits, setHits] = useState();
     const location = useLocation(); //All this is first draft for routing.
     const queryParams = new URLSearchParams(location.search);
     const searchQueryTest = queryParams.get('cqp');
@@ -51,29 +48,17 @@ export default function ResultsPage() {
     const [showHistory, setShowHistory] = useState(false);
     const { corporas } = useContext(CorporaContext);
     const isInitialMount = useRef(true);
-
-    const [perCorpusResults, setPerCorpusResults] = useState({});
-    const [corpusHits, setCorpusHits] = useState({});
-
-    const [queryCounter, setQueryCounter] = useState(0);
     
     const [words, setWords] = useState([]);
     const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-    const [showFilterModal, setShowFilterModal] = useState(false);
     const [wordsDict, setWordsDict] = useState({});
     const { settings, updateSettings } = useContext(SettingsContext);
     const [corpus, setCorpus] = useState(corpusQueryTest);
     const [corpusInput, setCorpusInput] = useState(corpusQueryTest);
     const [searchWordInput, setSearchWordInput] = useState(searchQueryTest); // IDK if we use this
 
-    const [showErrorCorpus, setShowErrorCorpus] = useState(false);
-    
-    const [rawSearchInput, setRawSearchInput] = useState("");
-
     const [queryData, setQueryData] = useState({});
     const [showModal, setShowModal] = useState(false);
-
-    const {state} = useLocation();
 
     const [isSticky, setIsSticky] = useState(false);
 
@@ -96,7 +81,7 @@ export default function ResultsPage() {
 
         }
         else {
-            console.log("error results page handleCorpusQuery");
+            console.log("darn");
         }
     };
 
@@ -104,9 +89,6 @@ export default function ResultsPage() {
         setShowAdvancedSearch((prev) => !prev);
     }
 
-    const toggleFilterModal = () => {
-        setShowFilterModal((prev) => !prev);
-    };
 
     const
         { data: searchCorpusData = [],
@@ -123,55 +105,26 @@ export default function ResultsPage() {
         { data: searchQueryData = [],
             isLoading: searchQueryIsLoading,
             refetch: searchQueryRefetch,
-            isRefetching: isSearchQueryRefetching
         } = useQuery({
-            queryKey: [searchWordInput, corpusInput],
-            queryFn: () => getCorpusQuery(searchWordInput, 0, 0, true, "sentence"),
+            queryKey: [searchWordInput],
+            queryFn: () => getCorpusQuery(searchWordInput),
             enabled: false,
         });
 
-        const handleSubmit = (event) => {
-            if (!corporas.corporas) {
-                setShowErrorCorpus(true);
-                return;
-            }
-        
-            setShowErrorCorpus(false);
-        
-            let query;
-            if (wordsDict && Object.keys(wordsDict).length > 1) {
-                query = buildQuery(wordsDict);
-            } else {
-                query = `[word = "${event}"]`;
-            }
-        
-            setSearchWordInput(query);        // Set CQP query
-            setRawSearchInput(event);         // Set original user input
-        
-            try {
-                window.localStorage.setItem("last_searched", 
-                    JSON.stringify(event));
-            } catch (e) {
-                console.log("Error Localstorage: ", e);
-            }
 
-            // Set corpora input based on selected corpora
-            const selectedCorpora = Object.keys(corporas.corporas);
-            const corpusInputStr = selectedCorpora.join(",");
-            setCorpusInput(corpusInputStr);
-        
-            // Navigate URL (for reload/bookmark)
-            navigate(`/results?corpus=${encodeURIComponent(corpusInputStr)}&cqp=${encodeURIComponent(query)}`
-                , {state: {wordFromLP : event}});
-        };
-        
+    const handleSubmit = (event) => {
+        handleCorpusQuery();
+        let res;
+                console.log(wordsDict);
+                if(wordsDict && Object.keys(wordsDict).length > 0){
+                    res = buildQuery(wordsDict);
+                }else{
+                    res = `[word = "${event}"]`;
+                }
 
-        useEffect(() => {
-            console.log('checking window state')
-            if(location.state === null) {
-                console.log('state is null....')
-                navigate('/error')
-        }}, [])
+        setSearchWordInput(res);
+        navigate(`/results?corpus=${encodeURIComponent(Object.keys(corporas.corporas))}&cqp=${encodeURIComponent(res)}`);
+    };
 
     const advanced_tip = (
         
@@ -181,7 +134,7 @@ export default function ResultsPage() {
 
 const filter_tip = (
     
-        <strong>Anpassa sökning</strong>
+        <strong>Filtrera</strong>
   
 );
 
@@ -218,75 +171,22 @@ const history_tip = (
         setCorpus(`[ ${current_corpora} ]`)
     }
 
-    function buildStartEndMap(corpusOrder, corpusHits, pageSize) {
-        const startEndMap = {};
-        let currentStart = 0; 
-    
-        for (const corpus of corpusOrder) {
-            const hits = Number(corpusHits[corpus]) || 0; 
-            if (hits > 0) {
-                startEndMap[corpus] = {
-                    start: currentStart,
-                    end: currentStart + Number(pageSize), 
-                };
-                currentStart += hits; 
-            }
-        }
-    
-        console.log('building map for ', corpusOrder, corpusHits, pageSize);
-        return startEndMap;
-    }
-    
-
     useEffect(() => {
-        if (searchWordInput && corpusInput) {
+        if (searchWordInput) {
+
+
+
             searchQueryRefetch().then((res) => {
-                const data = res.data;
-                
-                if (data?.corpus_hits && data?.corpus_order) {
-                    setCorpusHits(data.corpus_hits);
-                    setHits(data.hits);
-                    const startEndMap = buildStartEndMap(data.corpus_order, data.corpus_hits, settings.sampleSize);
-                   
-                    Object.entries(startEndMap).forEach(([corpusName, { start, end }]) => {
-                        console.log('fetching for', corpusName, start, end);
-                        setQueryCounter(queryCounter+1);
+                setQueryData(res.data);
 
-                       fetchCorpusResults(corpusName, start, end, searchWordInput);
-                    });
-                    
-                }
-            }).then(console.log('fetching done'));            
-            
-        }
-    }, [searchWordInput, corpusInput, settings.sampleSize]);
-
-    useEffect(() => {
-        console.log('queryCounter', queryCounter);
-        console.log('corpushits', corpusHits);
-    }, [queryCounter, corpusHits])
-
-    const fetchCorpusResults = async (corpusName, start, end, query) => {
-        try {
-            const responseFromQuery = await getCorpusQuery(query, start, end);
-            let corpLower = corpusName.toLowerCase();
-            setPerCorpusResults(prev => {
-                const updatedResults = {
-                    ...prev,
-                    [corpLower]: responseFromQuery
-                };
-                
-                // Use the updated value immediately
-                setQueryData(updatedResults);
-                console.log('updatedResults', updatedResults);
-                return updatedResults;
             });
-        } catch (error) {
-            console.error(`Failed to fetch results for ${corpusName}:`, error);
+
+
+
+            console.log("CHANGED: ", searchWordInput)
         }
-    };
-    
-    
+
+    }, [searchWordInput, searchQueryRefetch])
 
     useEffect(() => {
         setSearchWordInput(searchQueryTest || '');
@@ -318,7 +218,6 @@ const history_tip = (
 
     const handleAdvancedSearch = (e) => {
         setWordsDict(e);
-        console.log('wordDict in results page', e);
     }
 
     useEffect(() => {
@@ -365,13 +264,13 @@ const history_tip = (
                         </div>
                         <div className="resultpage__search_wrapper">
                             <div className={`resultpage__search_bar ${isSticky ? 'sticky' : ''}`}>
-                                <SearchBar disableBar={showAdvancedSearch} returnSearchInput={(e) => {
+                                <SearchBar returnSearchInput={(e) => {
                                     handleSubmit(e);
                                 }} />
+                                
                             </div>
                         </div>
                         <div className="resultpage__button_container">
-                        
                             <CircleButton
                                 className="extended-search-button"
                                 buttonColour='#FF9F79'
@@ -385,15 +284,9 @@ const history_tip = (
                                 className="filter-button"
                                 buttonColour='#FFB968'
                                 buttonImage={sliders_logo}
-                                buttonOnClick={toggleFilterModal}
+                                buttonOnClick={null}
                                 buttonToolTip={filter_tip}
-                                buttonLabel="Anpassa sökning" />
-                             <FilterCard
-                                show={showFilterModal}
-                                onHide={() => setShowFilterModal(false)}
-                                colour='#FFB968'
-                                buttonLogo={sliders_logo}
-                                                    />
+                                buttonLabel="Filter" />
 
                             <CircleButton
                                 className="history-button"
@@ -404,31 +297,18 @@ const history_tip = (
                                 buttonLabel="Historik" />
                         </div>
                     </div>
-                    {//<CalenderButton/>//
-}</div>
-                {showErrorCorpus && 
-                        <p className="landingpage__select__corpus__error">
-                                Välj korpus innan du söker!
-                        </p>}
-                <div className="advanced_search_master_container">
-                    <div className="resultpage_advanced_search_container">
-                        {showAdvancedSearch && <AdvancedSearch 
-                            returnWordsDict={(e) => handleAdvancedSearch(e)} 
-                            submitResult={(e) => handleSubmit(wordsDict)} />}
-                    </div>
+                    <CalenderButton/>
                 </div>
-                {showHistory && <HistoryPanel />}
                 
+                {showAdvancedSearch && <AdvancedSearch words={words}
+                                    returnWordsDict={(e) => handleAdvancedSearch(e)} />}
+                {showHistory && <HistoryPanel />}
                 <ProgressBar isLoading={searchQueryIsLoading} />
 
                 <div className="mt-2">
                     {/*queryData.kwic == undefined ? <p>Loading...</p> : JSON.stringify(queryData) */}
-                    {queryData === undefined ? <p>Laddar...</p> :
-                        <ResultsPanel response={queryData} 
-                            wordToDef={state?.wordFromLP} 
-                            isFetching={searchQueryIsLoading}
-                            corpusHits={corpusHits}
-                            hits={hits}/>}
+                    {queryData.kwic === undefined ? <p>Laddar...</p> :
+                        <ResultsPanel response={queryData} />}
                 </div>
                 <button className="results_page__back_to_top" onClick={scrollToTop}>Till toppen</button>
             </div>

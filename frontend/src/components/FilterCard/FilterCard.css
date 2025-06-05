@@ -7,6 +7,7 @@
 }
 
 .filterCloseButton {
+    width: 30%;
     justify-content: center;
     background-color: var(--primary-color);
     border: var(--primary-color);
@@ -34,20 +35,4 @@
     background-color: var(--bg-color);
 }
 
-/* Add this to your CSS files */
 
-._filter_card .modal-dialog {
-  height: auto;
-}
-
-
-._filter_card .modal-content {
-  height: auto;
-  overflow: visible;
-}
-
-
-._filter_card .modal-body {
-  overflow: visible;
-  max-height: none;
-}

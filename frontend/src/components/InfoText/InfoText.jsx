@@ -6,8 +6,13 @@ export default function InfoText() {
         <div className="infoTextContainer">
             <div className="infoTextWrapper">
                 <p>
-                    Här kan du utforska stora samlingar av text från till exempel tidningar,
-                    skönlitteratur och sociala medier. Börja med att söka efter ett ord och se vilka resultat som finns!         
+                    Korp är Språkbankens ordforskningsplattform.
+                </p>
+                <p>
+                    här kan du söka i stora mängder text från bland
+                    annat dagstidningar, skönlitteratur och sociala medier.
+                    Textsamlingarna, korpusarna, är annoterade med språkliga
+                    och andra attribut.
                 </p>
             </div>
         </div>

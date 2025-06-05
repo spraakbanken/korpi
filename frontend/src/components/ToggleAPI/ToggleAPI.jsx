@@ -15,12 +15,10 @@ export default function ToggleAPI() {
   const handleChange = (value) => {
     toggleAPI(value)
     updateSettings({...settings, api:value})
-    corporas.corporas = {'attasidor': '8 Sidor', 'svt-2006': 'SVT Nyheter 2006'}
     updateCorporas({
       ...corporas,
       api: value
     });
-    console.log("in toggle",corporas.corporas);
   };
 
   return (
@@ -32,11 +30,11 @@ export default function ToggleAPI() {
         onChange={handleChange} 
       >
         <ToggleButton className="toggle-button me-2" id="api-toggle-button-1" value={1} >
-          Språkbanken API
+          Språkbanken
         </ToggleButton>
           <span className="vr border-start border-1 border-dark rounded-3"></span>
         <ToggleButton className="toggle-button ms-2" id="api-toggle-button-2" value={0}>
-          Ny API
+          Peter-API
         </ToggleButton>
       </ToggleButtonGroup>
     </>

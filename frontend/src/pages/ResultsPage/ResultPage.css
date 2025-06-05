@@ -55,12 +55,12 @@
     max-width: 600px;
     z-index: 101;
     opacity: 1;
-    animation: fadeIn 0.1s ease-out;
+    animation: fadeIn 0.3s ease-out;
 }
 
 /* When removing sticky */
 .resultpage__search_bar:not(.sticky) {
-    animation: fadeOut 0.1s ease-out;
+    animation: fadeOut 0.3s ease-out;
 }
 
 
@@ -133,23 +133,12 @@
     visibility: visible;
 }
 
-.resultpage_advanced_search_container {
-    width: 30%;
-}
-
-.advanced_search_master_container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-}
-
 
 @media (max-width: 768px) {
     .resultpage__search_content {
         flex-direction: row;
         flex-wrap: wrap; 
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
         width: 90%; 
     }
@@ -165,33 +154,15 @@
         order: 1; 
         margin: 10px 0;
         max-width: none;
-        flex: 2;
     }
     
-    .resultpage__corpus_button{
-        order: 2; 
-        margin: 0;
-        flex: 1;
-        justify-content: center;
-    }
-
+    .resultpage__corpus_button,
     .resultpage__button_container {
         order: 2;
         margin: 0;
-        margin-left: 10px;
-        gap: 0px;
-        flex: 1;
+        gap:0px;
     }
-
-    .resultpage__search_wrapper {
-        width: 100%;
-    }
-
-    .logo-container {
-        padding-top: 0px;
-    }
-    
-    .calenderIconA, .homeIconA {
+    .calenderIconSVG, .homeIconA {
         display: none;
     }
     .resultpage__search_container {
@@ -199,14 +170,5 @@
         margin-bottom: 0px;
         margin-left: 0px;
         margin-right: 0px;
-    }
-
-    .corpus-button-div .corpus-button{
-        min-width: unset;
-        padding: 8px 10px;
-      }
-
-    .resultpage_advanced_search_container {
-        width: 90%;
     }
 }

@@ -4,14 +4,12 @@ import { useNavigate } from "react-router-dom";
 import SettingsContext from '../../services/SettingsContext';
 
 // React Components
-import ExampleSearches from "../../components/ExampleSearches/ExampleSearches.jsx";
 import HelloKorpi from "../../components/HelloKorpi/HelloKorpi.jsx";
 import NavigationBar from "../../components/NavigationBar/NavigationBar.jsx";
 import SearchBar from "../../components/SearchBar/SearchBar.jsx";
 import CorpusDropDown from "../../components/CorpusDropdown/CorpusDropdown.jsx";
 import CircleButton from "../../components/CircleButton/CircleButton.jsx";
 import InfoText from "../../components/InfoText/InfoText.jsx";
-import Date from "../../components/InfoText/Date.jsx";
 import HistoryPanel from "../../components/HistoryPanel/HistoryPanel.jsx";
 import Footer from "../../components/Footer/Footer.jsx";
 import CorpusModal from "../../components/CorpusModal/CorpusModal.jsx";
@@ -25,8 +23,8 @@ import corpus_logo from '../../assets/book-open.svg';
 import history_logo from '../../assets/rotate-ccw.svg';
 import sliders_logo from '../../assets/sliders.svg';
 import advanced from '../../assets/advanced.svg';
-import KorpLight from '../../assets/korpiLight.svg';
-import KorpDark from '../../assets/korpiDark.svg';
+import KorpLight from '../../assets/korpi.svg';
+import KorpDark from '../../assets/whiteKorp.svg';
 
 
 // main style
@@ -47,7 +45,6 @@ export default function LandingPage() {
     const [showModal, setShowModal] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
-    const [showErrorCorpus, setShowErrorCorpus] = useState(false);
 
     const korpImage = settings.theme === "light" ? KorpLight : KorpDark;
 
@@ -63,6 +60,7 @@ export default function LandingPage() {
         setShowFilterModal((prev) => !prev);
     };
 
+
     const toggleAdvancedSearch = () => {
         setShowAdvancedSearch((prev) => !prev);
     }
@@ -77,9 +75,9 @@ export default function LandingPage() {
        
     );
 
-    const search_settings_tip = (
+    const filter_tip = (
         
-            <strong>Anpassa sökning</strong>
+            <strong>Filtrera</strong>
       
     );
 
@@ -96,35 +94,20 @@ export default function LandingPage() {
     );
 
     const handleSubmit = (event) => {
-
-        if (corporas.corporas) {
-            //VET EJ HUR VI BYGGER URL QUERYN FÖR FLERA CORPUSAR.
-            setShowErrorCorpus(false);
-            let res;
-            if(wordsDict && wordsDict.length > 0){
-                res = buildQuery(wordsDict);
-            }else{
-                res = `[word = "${event}"]`;
-            }
-
-
-            try {
-                window.localStorage.setItem("last_searched", 
-                    JSON.stringify(event));
-            } catch (e) {
-                console.log("Error Localstorage: ", e);
-            }
-        
-            navigate(`/results?corpus=${encodeURIComponent(Object.keys(corporas.corporas))}&cqp=${encodeURIComponent(res)}`
-                , {state: {wordFromLP : event}});
-        } else {
-            setShowErrorCorpus(true);
+        //VET EJ HUR VI BYGGER URL QUERYN FÖR FLERA CORPUSAR.
+        let res;
+        console.log(wordsDict);
+        if(wordsDict && Object.keys(wordsDict).length > 0){
+            res = buildQuery(wordsDict);
+        }else{
+            res = `[word = "${event}"]`;
         }
+        
+        navigate(`/results?corpus=${encodeURIComponent(Object.keys(corporas.corporas))}&cqp=${encodeURIComponent(res)}`);
     };
 
     const handleAdvancedSearch = (e) => {
         setWordsDict(e);
-        console.log('wordDict in landing page', e);
     }
 
     const handleWords = (e) => {
@@ -139,22 +122,16 @@ export default function LandingPage() {
                 <div className="logo-container">
                     <img className="korp-image" src={korpImage} alt="" />
                 </div>
-                <p className="landingpage__slogan">Sök <span className="landingpage__orange_i">i</span> korpusar</p>
                 <div className="landingpage__search_bar_container">
-                    {showAdvancedSearch && <AdvancedSearch 
-                        returnWordsDict={(e) => handleAdvancedSearch(e)} 
-                        submitResult={(e) => handleSubmit(wordsDict)} />}
-                    {!showAdvancedSearch && <SearchBar
+                    <SearchBar
                         returnSearchInput={(e) => {
                             handleSubmit(e);
                         }}
                         returnWords={(e) => {
                             handleWords(e);
                         }}
-                    />}
+                    />
                 </div>
-                {!showAdvancedSearch &&< ExampleSearches />}
-                {showErrorCorpus && <p className="landingpage__select__corpus__error">Välj korpus innan du söker!</p>}
                 <div className="landingpage__button_group">
                     <div className="corpus-button-div">
                         <CorpusButton
@@ -185,8 +162,8 @@ export default function LandingPage() {
                             buttonColour='#FFB968'
                             buttonImage={sliders_logo}
                             buttonOnClick={toggleFilterModal}
-                            buttonToolTip={search_settings_tip}
-                            buttonLabel="Anpassa sökning"
+                            buttonToolTip={filter_tip}
+                            buttonLabel="Filter"
                         />
                         <FilterCard
                             show={showFilterModal}
@@ -202,15 +179,13 @@ export default function LandingPage() {
                             buttonToolTip={history_tip}
                             buttonLabel="Historik"
                         />
-
                     </div>
                 </div>
-                
+                {showAdvancedSearch && <AdvancedSearch words={words}
+                    returnWordsDict={(e) => handleAdvancedSearch(e)} />}
                 {showHistory && <HistoryPanel />}
 
                 <InfoText className="info_text" />
-                <Date className="date_text" />
-               
             </div>
             <Footer className="landing-footer" />
         </div>
