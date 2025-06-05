@@ -1,0 +1,14 @@
+.dateContainer {
+   width: 30%;
+   margin: 0 auto;
+   color: var(--text-color);
+   font-size: 11px;
+   padding-top: 15px;
+}
+
+
+@media (max-width: 768px) {
+   .dateContainer {
+      width: 75%;
+   }
+}
